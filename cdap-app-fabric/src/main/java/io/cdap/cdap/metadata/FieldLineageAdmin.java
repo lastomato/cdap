@@ -164,12 +164,8 @@ public class FieldLineageAdmin {
         direction == Constants.FieldLineage.Direction.BOTH) {
         Map<DatasetId, Set<String>> incomingSummary =
           convertSummaryToDatasetMap(fieldLineageReader.getIncomingSummary(endPointField, start, end));
-        for (Map.Entry<DatasetId, Set<String>> entry : incomingSummary.entrySet()) {
-          DatasetId incoming = entry.getKey();
-          incomingRelations.computeIfAbsent(incoming, k -> new HashSet<>());
-          // here the field itself will be the destination
-          entry.getValue().forEach(source -> incomingRelations.get(incoming).add(new FieldRelation(source, field)));
-        }
+        // here the field itself will be the destination
+        computeAndAddRelations(incomingRelations, field, true, incomingSummary);
       }
 
       // compute the outgoing field level lineage
@@ -177,26 +173,30 @@ public class FieldLineageAdmin {
         direction == Constants.FieldLineage.Direction.BOTH) {
         Map<DatasetId, Set<String>> outgoingSummary =
           convertSummaryToDatasetMap(fieldLineageReader.getOutgoingSummary(endPointField, start, end));
-        for (Map.Entry<DatasetId, Set<String>> entry : outgoingSummary.entrySet()) {
-          DatasetId outgoing = entry.getKey();
-          outgoingRelations.computeIfAbsent(outgoing, k -> new HashSet<>());
-          // here the field itself will be the source
-          entry.getValue().forEach(dest -> outgoingRelations.get(outgoing).add(new FieldRelation(field, dest)));
-        }
+        // here the field itself will be the source
+        computeAndAddRelations(outgoingRelations, field, false, outgoingSummary);
       }
     }
 
     Set<String> noLineageFields = getFieldsWithNoFieldLineage(endPoint, lineageFields);
     Set<String> allFields = ImmutableSet.<String>builder().addAll(lineageFields).addAll(noLineageFields).build();
-    Set<FieldLineageRelations> incomings =
-      incomingRelations.entrySet().stream().map(entry -> new FieldLineageRelations(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toSet());
-    Set<FieldLineageRelations> outgoings =
-      outgoingRelations.entrySet().stream().map(entry -> new FieldLineageRelations(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toSet());
     return new DatasetFieldLineageSummary(direction, start, end,
                                           new DatasetId(endPoint.getNamespace(), endPoint.getName()),
-                                          allFields, incomings, outgoings);
+                                          allFields, incomingRelations, outgoingRelations);
+  }
+
+  /**
+   * Compute the relations from the given summary and add the field relation to the map of relations. The field is
+   * either the source or the destination in the relation.
+   */
+  private void computeAndAddRelations(Map<DatasetId, Set<FieldRelation>> relations, String field, boolean isDestination,
+                                      Map<DatasetId, Set<String>> summary) {
+    for (Map.Entry<DatasetId, Set<String>> entry : summary.entrySet()) {
+      DatasetId outgoing = entry.getKey();
+      relations.computeIfAbsent(outgoing, k -> new HashSet<>());
+      entry.getValue().forEach(otherField -> relations.get(outgoing).add(
+        isDestination ? new FieldRelation(otherField, field) : new FieldRelation(field, otherField)));
+    }
   }
 
   private Set<DatasetField> convertSummaryToDatasetField(Set<EndPointField> summary) {
@@ -265,10 +265,11 @@ public class FieldLineageAdmin {
       Schema sc = Schema.parseJson(schema);
       if (sc.getFields() != null) {
         Set<String> schemaFields = sc.getFields().stream().map(Schema.Field::getName).collect(Collectors.toSet());
-        // Sets.difference will return all the fields which are present in schemaFields and not present in lineage
-        // fields. If there are common fields then they will not be present in the difference and will be treated
-        // as lineage fields containing lineage information.
-        return Sets.difference(schemaFields, lineageFields).immutableCopy();
+        // filter out the fields that are part of the lineageFields
+        return sc.getFields().stream()
+          .map(Schema.Field::getName)
+          .filter(name -> !lineageFields.contains(name))
+          .collect(Collectors.toSet());
       }
     } else {
       LOG.trace("Received request to include schema fields for {} but no schema was found. Only fields present in " +

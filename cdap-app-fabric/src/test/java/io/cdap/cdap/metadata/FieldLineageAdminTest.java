@@ -272,26 +272,26 @@ public class FieldLineageAdminTest extends AppFabricTestBase {
     Assert.assertEquals(fields, summary.getFields());
     Assert.assertEquals(new DatasetId("ns1", "ds1"), summary.getEntityId());
 
-    Set<FieldLineageRelations> expectedIncomings = ImmutableSet.of(
-      new FieldLineageRelations(new DatasetId("ns1", "src1"),
-                                ImmutableSet.of(new FieldRelation("src1f1", "field1"),
-                                                new FieldRelation("src1f2", "field1"))),
-      new FieldLineageRelations(new DatasetId("ns1", "src2"),
-                                ImmutableSet.of(new FieldRelation("src2f1", "field1"),
+    Set<DatasetFieldLineageSummary.FieldLineageRelations> expectedIncomings = ImmutableSet.of(
+      new DatasetFieldLineageSummary.FieldLineageRelations(new DatasetId("ns1", "src1"),
+                                                           ImmutableSet.of(new FieldRelation("src1f1", "field1"),
+                                                                           new FieldRelation("src1f2", "field1"))),
+      new DatasetFieldLineageSummary.FieldLineageRelations(new DatasetId("ns1", "src2"),
+                                                           ImmutableSet.of(new FieldRelation("src2f1", "field1"),
                                                 new FieldRelation("src2f2", "field2"))),
-      new FieldLineageRelations(new DatasetId("ns1", "src3"),
-                                ImmutableSet.of(new FieldRelation("src3f1", "field2"),
+      new DatasetFieldLineageSummary.FieldLineageRelations(new DatasetId("ns1", "src3"),
+                                                           ImmutableSet.of(new FieldRelation("src3f1", "field2"),
                                                 new FieldRelation("src3f2", "field3"))));
     Assert.assertEquals(expectedIncomings, summary.getIncoming());
 
-    Set<FieldLineageRelations> expectedOutgoings = ImmutableSet.of(
-      new FieldLineageRelations(new DatasetId("ns1", "dest1"),
-                                ImmutableSet.of(new FieldRelation("field1", "dest1f1"),
+    Set<DatasetFieldLineageSummary.FieldLineageRelations> expectedOutgoings = ImmutableSet.of(
+      new DatasetFieldLineageSummary.FieldLineageRelations(new DatasetId("ns1", "dest1"),
+                                                           ImmutableSet.of(new FieldRelation("field1", "dest1f1"),
                                                 new FieldRelation("field2", "dest1f2"))),
-      new FieldLineageRelations(new DatasetId("ns1", "dest2"),
-                                ImmutableSet.of(new FieldRelation("field1", "dest2f1"),
-                                                new FieldRelation("field2", "dest2f1"),
-                                                new FieldRelation("field3", "dest2f2"))));
+      new DatasetFieldLineageSummary.FieldLineageRelations(new DatasetId("ns1", "dest2"),
+                                                           ImmutableSet.of(new FieldRelation("field1", "dest2f1"),
+                                                                           new FieldRelation("field2", "dest2f1"),
+                                                                           new FieldRelation("field3", "dest2f2"))));
     Assert.assertEquals(expectedOutgoings, summary.getOutgoing());
   }
 

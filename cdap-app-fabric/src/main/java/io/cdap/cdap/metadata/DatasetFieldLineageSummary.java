@@ -16,10 +16,14 @@
 
 package io.cdap.cdap.metadata;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.cdap.cdap.common.conf.Constants;
 import io.cdap.cdap.proto.id.DatasetId;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The summary about all the field level lineage information about all fields in a dataset.
@@ -34,15 +38,17 @@ public class DatasetFieldLineageSummary {
   private final Set<FieldLineageRelations> outgoing;
 
   public DatasetFieldLineageSummary(Constants.FieldLineage.Direction direction, long startTs, long endTs,
-                                    DatasetId entityId, Set<String> fields, Set<FieldLineageRelations> incoming,
-                                    Set<FieldLineageRelations> outgoing) {
+                                    DatasetId entityId, Set<String> fields, Map<DatasetId, Set<FieldRelation>> incoming,
+                                    Map<DatasetId, Set<FieldRelation>> outgoing) {
     this.direction = direction;
     this.startTs = startTs;
     this.endTs = endTs;
     this.entityId = entityId;
     this.fields = fields;
-    this.incoming = incoming;
-    this.outgoing = outgoing;
+    this.incoming = incoming.entrySet().stream().map(
+      entry -> new FieldLineageRelations(entry.getKey(), entry.getValue())).collect(Collectors.toSet());
+    this.outgoing = outgoing.entrySet().stream().map(
+      entry -> new FieldLineageRelations(entry.getKey(), entry.getValue())).collect(Collectors.toSet());
   }
 
   public Constants.FieldLineage.Direction getDirection() {
@@ -71,5 +77,47 @@ public class DatasetFieldLineageSummary {
 
   public Set<FieldLineageRelations> getOutgoing() {
     return outgoing;
+  }
+
+  /**
+   * This class represents an aggregation of the field level lineage about an incoming/outgoing dataset. The entityId
+   * represents the dataset. And the relations contains all the field level lineage.
+   */
+  public static class FieldLineageRelations {
+    private final DatasetId entityId;
+    private final Set<FieldRelation> relations;
+
+    FieldLineageRelations(DatasetId entityId, Set<FieldRelation> relations) {
+      this.entityId = entityId;
+      this.relations = relations;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      DatasetFieldLineageSummary.FieldLineageRelations that = (DatasetFieldLineageSummary.FieldLineageRelations) o;
+      return Objects.equals(entityId, that.entityId) &&
+        Objects.equals(relations, that.relations);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(entityId, relations);
+    }
+
+    public DatasetId getEntityId() {
+      return entityId;
+    }
+
+    public Set<FieldRelation> getRelations() {
+      return relations;
+    }
   }
 }
