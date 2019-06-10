@@ -122,6 +122,22 @@ public class LineageHTTPHandler extends AbstractHttpHandler {
   }
 
   @GET
+  @Path("/namespaces/{namespace-id}/datasets/{dataset-id}/lineage/allfields")
+  public void datasetFieldLineage(HttpRequest request, HttpResponder responder,
+                                  @PathParam("namespace-id") String namespaceId,
+                                  @PathParam("dataset-id") String datasetId,
+                                  @QueryParam("direction") String directionStr,
+                                  @QueryParam("start") String startStr,
+                                  @QueryParam("end") String endStr) throws BadRequestException, IOException {
+    TimeRange range = parseRange(startStr, endStr);
+    Constants.FieldLineage.Direction direction = parseDirection(directionStr);
+    DatasetFieldLineageSummary summary = fieldLineageAdmin.getDatasetFieldLineage(direction,
+                                                                                  EndPoint.of(namespaceId, datasetId),
+                                                                                  range.getStart(), range.getEnd());
+    responder.sendJson(HttpResponseStatus.OK, GSON.toJson(summary));
+  }
+
+  @GET
   @Path("/namespaces/{namespace-id}/datasets/{dataset-id}/lineage/fields/{field-name}")
   public void datasetFieldLineageSummary(HttpRequest request, HttpResponder responder,
                                          @PathParam("namespace-id") String namespaceId,
@@ -133,8 +149,8 @@ public class LineageHTTPHandler extends AbstractHttpHandler {
     TimeRange range = parseRange(startStr, endStr);
     Constants.FieldLineage.Direction direction = parseDirection(directionStr);
     EndPointField endPointField = new EndPointField(EndPoint.of(namespaceId, datasetId), field);
-    FieldLineageSummary summary = fieldLineageAdmin.getSummary(direction, endPointField, range.getStart(),
-                                                               range.getEnd());
+    FieldLineageSummary summary = fieldLineageAdmin.getFieldLineage(direction, endPointField, range.getStart(),
+                                                                    range.getEnd());
     responder.sendJson(HttpResponseStatus.OK, GSON.toJson(summary));
   }
 
