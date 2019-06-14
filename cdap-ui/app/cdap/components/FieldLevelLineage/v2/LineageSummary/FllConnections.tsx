@@ -37,15 +37,13 @@ interface IConnectionsProps extends WithStyles<typeof styles> {
 }
 
 class FllConnections extends React.Component<IConnectionsProps> {
-  public componentDidMount() {}
-
   public render() {
     const links = this.props.links;
     return (
       <svg id="connection=container">
         <g>
           {links.map((link) => {
-            return <path ref={} />;
+            return <path />;
           })}
         </g>
       </svg>

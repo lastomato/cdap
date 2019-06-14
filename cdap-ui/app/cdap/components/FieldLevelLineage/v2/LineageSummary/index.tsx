@@ -114,12 +114,12 @@ class LineageSummary extends React.Component<{ classes }> {
   }
 
   public componentWillUnmount() {
-    document.body.onresize = null;
+    (document.body as HTMLBodyElement).onresize = null;
   }
 
   public componentDidMount() {
     this.drawLinks();
-    document.body.onresize = debounce(this.drawLinks.bind(this), 1);
+    (document.body as HTMLBodyElement).onresize = debounce(this.drawLinks.bind(this), 1);
   }
   public render() {
     return (
